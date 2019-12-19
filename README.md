@@ -4,7 +4,7 @@ A python automated bot to play Flight Rising's Glimmer and Gloom minigame.
 Intended for split-screen usage on a 1920x1080p monitor at normal zoom. Although it may function at different resolutions, the boundaries may have to be tweaked.
 
 Run bot.py when the game has begun, as in the screenshot:
-<img src="https://i.imgur.com/gh4QgcB.jpg">
+<img src="https://i.imgur.com/4VFS5As.jpg">
 
 The bot will work its way, clicking down from the top left to the bottom right. When it runs out of gloom hexes that aren't on the bottom right edges, it'll calculate the appropriate glimmers to click on and work them down to cancel out the remaining edge hexes. Calculations from the excellent <a href="https://docs.google.com/spreadsheets/d/1zrLIjer2FKmknXpyopCSEfVDdEP5rgxWsTOBVFkW8lQ/edit#gid=0">spreadsheet</a> done by <a href="https://flightrising.com/main.php?p=lair&tab=userpage&id=186567">Sqld</a>.
 
