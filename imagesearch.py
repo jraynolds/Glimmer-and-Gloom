@@ -10,6 +10,8 @@ is_retina = False
 if platform.system() == "Darwin":
     is_retina = subprocess.call("system_profiler SPDisplaysDataType | grep 'retina'", shell=True)
 
+DEBUG_MODE = False
+
 '''
 
 grabs a region (topx, topy, bottomx, bottomy)
@@ -20,8 +22,6 @@ input : a tuple containing the 4 coordinates of the region to capture
 output : a PIL image of the area selected.
 
 '''
-
-
 def region_grabber(region):
     if is_retina: region = [n * 2 for n in region]
     x1 = region[0]
@@ -50,8 +50,6 @@ returns :
 the top left corner coordinates of the element if found as an array [x,y] or [-1,-1] if not
 
 '''
-
-
 def imagesearcharea(image, x1, y1, x2, y2, precision=0.8, im=None):
     if im is None:
         im = region_grabber(region=(x1, y1, x2, y2))
@@ -85,8 +83,6 @@ pos : array containing the position of the top left corner of the image [x,y]
 action : button of the mouse to activate : "left" "right" "middle", see pyautogui.click documentation for more info
 time : time taken for the mouse to move from where it was to the new position
 '''
-
-
 def click_image(image, pos, action, timestamp, offset=5):
     img = cv2.imread(image)
     height, width, channels = img.shape
@@ -108,8 +104,6 @@ returns :
 the top left corner coordinates of the element if found as an array [x,y] or [-1,-1] if not
 
 '''
-
-
 def imagesearch(image, precision=0.8):
     im = pyautogui.screenshot()
     if is_retina:
@@ -139,8 +133,6 @@ returns :
 the top left corner coordinates of the element if found as an array [x,y] 
 
 '''
-
-
 def imagesearch_loop(image, timesample, precision=0.8):
     pos = imagesearch(image, precision)
     while pos[0] == -1:
@@ -163,8 +155,6 @@ returns :
 the top left corner coordinates of the element if found as an array [x,y] 
 
 '''
-
-
 def imagesearch_numLoop(image, timesample, maxSamples, precision=0.8):
     pos = imagesearch(image, precision)
     count = 0
@@ -194,8 +184,6 @@ returns :
 the top left corner coordinates of the element as an array [x,y] 
 
 '''
-
-
 def imagesearch_region_loop(image, timesample, x1, y1, x2, y2, precision=0.8):
     pos = imagesearcharea(image, x1, y1, x2, y2, precision)
 
@@ -217,8 +205,6 @@ the number of times a given image appears on the screen.
 optionally an output image with all the occurances boxed with a red outline.
 
 '''
-
-
 def imagesearch_count(image, region, precision=0.9):
     if region:
         img_rgb = pyautogui.screenshot(region=region)
@@ -234,9 +220,11 @@ def imagesearch_count(image, region, precision=0.9):
     loc = np.where(res >= precision)
     count = 0
     for pt in zip(*loc[::-1]):  # Swap columns and rows
-        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # Uncomment to draw boxes around found occurances
+        if DEBUG_MODE:
+            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # Uncomment to draw boxes around found occurances
         count = count + 1
-    cv2.imwrite('result.png', img_rgb) # Uncomment to write output image with boxes drawn around occurances
+    if DEBUG_MODE:
+            cv2.imwrite(image + ' occurances.png', img_rgb) # Uncomment to write output image with boxes drawn around occurances
     return count
 
 '''
@@ -250,8 +238,6 @@ returns :
 An array of the locations of found images.
 
 '''
-
-
 def imagesearch_array(image, region, precision=0.9):
     if region:
         img_rgb = pyautogui.screenshot(region=region)
@@ -267,8 +253,11 @@ def imagesearch_array(image, region, precision=0.9):
     loc = np.where(res >= precision)
     pts = []
     for pt in zip(*loc[::-1]):  # Swap columns and rows
-        # print(pt)
+        if DEBUG_MODE:
+            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # draws boxes around found occurances
         pts.append(pt)
+    if DEBUG_MODE:
+        cv2.imwrite(image + ' occurances.png', img_rgb) # saves an image showing located images
 
     return pts
 
