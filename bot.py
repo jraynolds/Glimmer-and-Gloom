@@ -1,7 +1,7 @@
 from imagesearch import *
 from numpy import empty
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 CLICK_DELAY = .2
 
@@ -15,6 +15,10 @@ ROW_MARGIN = 10
 
 TOP_INDICES = [26, 18, 11, 5, 0, 1, 2, 3, 4]
 BOTTOM_INDICES = [56, 57, 58, 59, 60, 55, 49, 42, 34]
+
+BAN_EVASION_MODE = False # Introduces fuzzing to avoid cheat detection.
+POINT_FUZZING_MAX = 3 # Fuzzes clicks by up to this number of pixels.
+DELAY_FUZZING_MAX = .5 # Fuzzes click delay by up to this number of seconds.
 
 def run_bot():
 	glimgloms = order_gloms(gather_gloms())
@@ -49,18 +53,32 @@ def click_lowest(glimgloms):
 				break
 
 	if glom:
-		click_cell(glom, True)
+		click_cell(glom)
 		return True
 	else:
 		return False
 
-def click_cell(cell, offset=False):
-	if offset:
-		pyautogui.moveTo(WINDOW_OFFSET[0] + cell[0] + 1 * IMAGE_DIMENSIONS[0], WINDOW_OFFSET[1] + cell[1] + 2 * IMAGE_DIMENSIONS[1])
-	else:
-		pyautogui.moveTo(WINDOW_OFFSET[0] + cell[0] + .5 * IMAGE_DIMENSIONS[0], WINDOW_OFFSET[1] + cell[1] + .5 * IMAGE_DIMENSIONS[1])
+def click_cell(cell, clickingBottomRight=True):
+	BOTTOM_RIGHT_OFFSET = [1, 2]
+	DEFAULT_OFFSET = [.5, .5]
+	offset = [DEFAULT_OFFSET[0], DEFAULT_OFFSET[1]]
+	if clickingBottomRight:
+		offset = [BOTTOM_RIGHT_OFFSET[0], BOTTOM_RIGHT_OFFSET[1]]
+
+	x = WINDOW_OFFSET[0] + cell[0] + offset[0] * IMAGE_DIMENSIONS[0]
+	y = WINDOW_OFFSET[1] + cell[1] + offset[1] * IMAGE_DIMENSIONS[1]
+	if BAN_EVASION_MODE:
+		x += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
+		y += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
+
+	pyautogui.moveTo(x, y)
 	pyautogui.click(button="left")
-	pyautogui.PAUSE = CLICK_DELAY
+
+	pauseAmount = CLICK_DELAY
+	if BAN_EVASION_MODE:
+		pauseAmount += random.uniform(0, DELAY_FUZZING_MAX)
+
+	pyautogui.PAUSE = pauseAmount
 	pyautogui.moveTo(30, 30)
 
 
@@ -180,15 +198,15 @@ def print_board(glimgloms):
 		print("Length is " + str(len(glimgloms)))
 		print(glimgloms)
 
-	i = 0
-	printed = []
-	for row in board:
-		printed_row = []
-		for cell in row:
-			if cell is not 0:
-				printed_row.append(cell)
-			else:
-				printed_row.append(glimgloms[i])
-				i+=1
+	# i = 0
+	# printed = []
+	# for row in board:
+	# 	printed_row = []
+	# 	for cell in row:
+	# 		if cell is not 0:
+	# 			printed_row.append(cell)
+	# 		else:
+	# 			printed_row.append(glimgloms[i])
+	# 			i+=1
 
 run_bot()
