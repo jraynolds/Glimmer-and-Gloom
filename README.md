@@ -25,6 +25,7 @@ The bulk of this project was made possible by <a href="https://github.com/drov0"
 - Arrange your Glimmer and Gloom game to the left side of your screen
 - Type `python bot.py` in that same cmd window and press enter
 - It should work!
+- Start a new game and do it again from `python bot.py`!
 
 # Error handling
 - Couldn't install python? Python help forums are better-equipped to assist than I.
