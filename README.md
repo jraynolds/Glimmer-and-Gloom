@@ -21,7 +21,7 @@ The bulk of this project was made possible by <a href="https://github.com/drov0"
 - Download the files (click on the green code button, download as a .zip, and unzip it using WinRar or similar)
 - Install python (https://www.python.org/downloads/)
 - Open the unzipped folder, click the Windows Explorer location bar, type 'cmd' and press enter
-- Type `pip install -r requirements.txt` in the resulting window and press enter (Did that not work? Does it not know what 'pip' is? Something's wrong with your python install.)
+- Type `pip install -r requirements.txt` in the resulting window and press enter
 - Arrange your Glimmer and Gloom game to the left side of your screen
 - Type `python bot.py` in that same cmd window and press enter
 - It should work!
