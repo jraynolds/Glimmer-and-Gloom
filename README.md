@@ -12,7 +12,22 @@ If at any time the program has to be stopped, move your cursor to the corner of 
 
 The bulk of this project was made possible by <a href="https://github.com/drov0">drov0</a>'s <a href="https://github.com/drov0/python-imagesearch">python-imagesearch</a> project, and includes his imagesearch.py file with some minor edits. 
 
-# Installation
+# Quick guide
 - Download the files.
 - You need python, and then several dependencies which can be installed via running `pip install -r requirements.txt`.
 - Run the file in splitscreen!
+
+# Step-by-step guide
+- Download the files (click on the green code button, download as a .zip, and unzip it using WinRar or similar)
+- Install python (https://www.python.org/downloads/)
+- Open the unzipped folder, click the Windows Explorer location bar, type 'cmd' and press enter
+- Type `pip install -r requirements.txt` in the resulting window and press enter (Did that not work? Does it not know what 'pip' is? Something's wrong with your python install.)
+- Arrange your Glimmer and Gloom game to the left side of your screen
+- Type `python bot.py` in that same cmd window and press enter
+- It should work!
+
+# Error handling
+- Couldn't install python? Python help forums are better-equipped to assist than I.
+- Requirements installing failed? Some of the code needed to run this program may have disappeared. That's out of my control.
+- It's not solving the game right? A lot of things could cause that. My best guess is it's not reading the correct screen region. If you're doing it differently than I am (1/2 of your screen, splitscreen to the left on a 1920x1080 monitor) you may have to edit the WINDOW_OFFSET and GAME_DIMENSIONS values.
+- Still not working? Please contact me on twitter @jasper_raynolds and let me know!
