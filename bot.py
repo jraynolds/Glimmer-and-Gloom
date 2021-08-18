@@ -160,6 +160,9 @@ def gather_gloms(region=(WINDOW_OFFSET[0], WINDOW_OFFSET[1], GAME_DIMENSIONS[0],
 		glimgloms.append((g[0], g[1], "glimmer"))
 	for g in glooms:
 		glimgloms.append((g[0], g[1], "gloom"))
+	if len(glimgloms) is 0:
+		print("We didn't manage to find any glimmer or gloom squares. Is the game begun and visible on your screen?")
+		print("Have you arranged the Flight Rising window and the search window area appropriately?")
 	return glimgloms
 
 def order_gloms(gloms):
