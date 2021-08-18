@@ -1,7 +1,7 @@
 from imagesearch import *
 from numpy import empty
 
-DEBUG_MODE = True
+DEBUG_MODE = True # Set this to False once you're sure everything is working. When True, this will run a pretest to make sure everything is being detected as it should be and will print out diagnostic messages as you go.
 
 CLICK_DELAY = .2
 
@@ -9,6 +9,7 @@ IMAGE_DIMENSIONS = (48, 31)
 
 WINDOW_OFFSET = (220, 350)
 GAME_DIMENSIONS = (720, 620)
+GAME_PADDING = (100, 100)
 
 ROW_DIMENSIONS = (485, 36)
 ROW_MARGIN = 10
@@ -19,6 +20,16 @@ BOTTOM_INDICES = [56, 57, 58, 59, 60, 55, 49, 42, 34]
 BAN_EVASION_MODE = False # Introduces fuzzing to avoid cheat detection.
 POINT_FUZZING_MAX = 3 # Fuzzes clicks by up to this number of pixels.
 DELAY_FUZZING_MAX = .5 # Fuzzes click delay by up to this number of seconds.
+
+GLIMMER_FILE_PATH = "./glimmer2.png"
+GLOOM_FILE_PATH = "./gloom.png"
+
+CAPTURE_REGION = (
+	WINDOW_OFFSET[0] - GAME_PADDING[0], 
+	WINDOW_OFFSET[1] - GAME_PADDING[0], 
+	WINDOW_OFFSET[0] + GAME_DIMENSIONS[0] + GAME_PADDING[0], 
+	WINDOW_OFFSET[1] + GAME_DIMENSIONS[1] + GAME_PADDING[1]
+)
 
 def run_bot():
 	glimgloms = order_gloms(gather_gloms())
@@ -151,16 +162,16 @@ def get_nw(pts):
 			nw = pt
 	return nw
 
-def gather_gloms(region=(WINDOW_OFFSET[0], WINDOW_OFFSET[1], GAME_DIMENSIONS[0], GAME_DIMENSIONS[1])):
+def gather_gloms():
 	glimgloms = []
-	glimmers = imagesearch_array("./glimmer2.png", region)
-	glooms = imagesearch_array("./gloom.png", region)
+	glimmers = imagesearch_array(GLIMMER_FILE_PATH, CAPTURE_REGION)
+	glooms = imagesearch_array(GLOOM_FILE_PATH, CAPTURE_REGION)
 
 	for g in glimmers:
 		glimgloms.append((g[0], g[1], "glimmer"))
 	for g in glooms:
 		glimgloms.append((g[0], g[1], "gloom"))
-	if len(glimgloms) is 0:
+	if len(glimgloms) == 0:
 		print("We didn't manage to find any glimmer or gloom squares. Is the game begun and visible on your screen?")
 		print("Have you arranged the Flight Rising window and the search window area appropriately?")
 	return glimgloms
@@ -201,15 +212,29 @@ def print_board(glimgloms):
 		print("Length is " + str(len(glimgloms)))
 		print(glimgloms)
 
-	# i = 0
-	# printed = []
-	# for row in board:
-	# 	printed_row = []
-	# 	for cell in row:
-	# 		if cell is not 0:
-	# 			printed_row.append(cell)
-	# 		else:
-	# 			printed_row.append(glimgloms[i])
-	# 			i+=1
+def run_pretest():
+	print("We're running a setup diagnostic.")
+	im = region_grabber(region=CAPTURE_REGION)
+	file_path = "game_region.png"
+	print("We're saving a file to " + file_path + " showing our search region.")
+	print("If the image you find at that location isn't representative of the entire game board, you need to change the global variables defining it.")
+	im.save(file_path) # Saves a screenshot of the region we're looking in
+	num_glimmers = imagesearch_count(
+		GLIMMER_FILE_PATH, 
+		CAPTURE_REGION, 
+		save_output=" found", 
+		debug=True
+	)
+	num_glooms = imagesearch_count(
+		GLOOM_FILE_PATH, 
+		CAPTURE_REGION, 
+		save_output=" found", 
+		debug=True
+	)
+	print("In total we found " + str(num_glimmers) + " glimmers and " + str(num_glooms) + " glooms.")
 
-run_bot()
+if DEBUG_MODE:
+	run_pretest()
+	run_bot()
+else :
+	run_bot()

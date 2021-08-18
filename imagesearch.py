@@ -1,3 +1,7 @@
+## Code taken from drov0's python-imagesearch github at 
+## https://github.com/drov0/python-imagesearch
+## Some edits made.
+
 import cv2
 import numpy as np
 import pyautogui
@@ -9,8 +13,6 @@ import subprocess
 is_retina = False
 if platform.system() == "Darwin":
     is_retina = subprocess.call("system_profiler SPDisplaysDataType | grep 'retina'", shell=True)
-
-DEBUG_MODE = False
 
 '''
 
@@ -34,7 +36,7 @@ def region_grabber(region):
 
 '''
 
-Searchs for an image within an area
+Searches for an image within an area
 
 input :
 
@@ -55,7 +57,6 @@ def imagesearcharea(image, x1, y1, x2, y2, precision=0.8, im=None):
         im = region_grabber(region=(x1, y1, x2, y2))
         if is_retina:
             im.thumbnail((round(im.size[0] * 0.5), round(im.size[1] * 0.5)))
-        # im.save('testarea.png') usefull for debugging purposes, this will save the captured region as "testarea.png"
 
     img_rgb = np.array(im)
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
@@ -198,16 +199,24 @@ Searches for an image on the screen and counts the number of occurrences.
 
 input :
 image : path to the target image file (see opencv imread for supported types)
+region : an optional tuple of 4 integers describing the box we're searching in: (top left xVal, top left yVal, bottom right xVal, bottom right yVal). If not provided, searches the entire screen.
 precision : the higher, the lesser tolerant and fewer false positives are found default is 0.9
+save_output : an optional output string location to save an illustrative image to. If not provided, does not save an output image.
+debug : whether we want to print out information to the console as we go. By default, no.
 
 returns :
 the number of times a given image appears on the screen.
 optionally an output image with all the occurances boxed with a red outline.
 
 '''
-def imagesearch_count(image, region, precision=0.9):
+def imagesearch_count(image, region=None, precision=0.9, save_output=None, debug=False):
     if region:
-        img_rgb = pyautogui.screenshot(region=region)
+        img_rgb = pyautogui.screenshot(region=(
+            region[0],
+            region[1],
+            region[2] - region[0],
+            region[3] - region[1]
+        ))
     else:
         img_rgb = pyautogui.screenshot()
     if is_retina:
@@ -220,11 +229,15 @@ def imagesearch_count(image, region, precision=0.9):
     loc = np.where(res >= precision)
     count = 0
     for pt in zip(*loc[::-1]):  # Swap columns and rows
-        if DEBUG_MODE:
-            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # Uncomment to draw boxes around found occurances
+        if save_output:
+            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # Draws a box around found occurrences
         count = count + 1
-    if DEBUG_MODE:
-            cv2.imwrite(image + ' occurances.png', img_rgb) # Uncomment to write output image with boxes drawn around occurances
+    if save_output:
+        file_path = image + ' ' + save_output + ".png"
+        if debug:
+            print("We're saving a file to " + file_path + " with illustrative boxes.")
+            print("If the image you find at that location doesn't have any red boxes present, it's not properly detecting.")
+        cv2.imwrite(file_path, img_rgb) # Writes an image with illustrative boxes
     return count
 
 '''
@@ -233,14 +246,23 @@ Gathers matching positions of found images into an array.
 input :
 image : path to the target image file (see opencv imread for supported types)
 precision : the higher, the lesser tolerant and fewer false positives are found default is 0.9
+region : an optional tuple of 4 integers describing the box we're searching in: (top left xVal, top left yVal, bottom right xVal, bottom right yVal). If not provided, searches the entire screen.
+save_output : an optional output string location to save an illustrative image to. If not provided, does not save an output image.
+debug : whether we want to print out information to the console as we go. By default, no.
 
 returns :
 An array of the locations of found images.
+optionally an output image with all the occurances boxed with a red outline.
 
 '''
-def imagesearch_array(image, region, precision=0.9):
+def imagesearch_array(image, region=None, precision=0.9, save_output=None, debug=False):
     if region:
-        img_rgb = pyautogui.screenshot(region=region)
+        img_rgb = pyautogui.screenshot(region=(
+            region[0],
+            region[1],
+            region[2] - region[0],
+            region[3] - region[1]
+        ))
     else:
         img_rgb = pyautogui.screenshot()
     if is_retina:
@@ -253,11 +275,15 @@ def imagesearch_array(image, region, precision=0.9):
     loc = np.where(res >= precision)
     pts = []
     for pt in zip(*loc[::-1]):  # Swap columns and rows
-        if DEBUG_MODE:
-            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # draws boxes around found occurances
+        if save_output:
+            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2) # Draws a box around found occurrences
         pts.append(pt)
-    if DEBUG_MODE:
-        cv2.imwrite(image + ' occurances.png', img_rgb) # saves an image showing located images
+    if save_output:
+        file_path = image + ' ' + save_output + ".png"
+        if debug:
+            print("We're saving a file to " + file_path + " with illustrative boxes.")
+            print("If the image you find at that location doesn't have any red boxes present, it's not properly detecting.")
+        cv2.imwrite(file_path, img_rgb) # Writes an image with illustrative boxes
 
     return pts
 
