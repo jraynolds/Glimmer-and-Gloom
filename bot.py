@@ -3,16 +3,16 @@ from numpy import empty
 
 DEBUG_MODE = True # Set this to False once you're sure everything is working. When True, this will run a pretest to make sure everything is being detected as it should be and will print out diagnostic messages as you go.
 
-CLICK_DELAY = .2
+CLICK_DELAY = .2 # The delay in seconds between moves we implement so we don't go too fast.
 
-IMAGE_DIMENSIONS = (48, 31)
+CELL_DIMENSIONS = (48, 31) # The width and height of our glimmer/gloom test images.
 
-WINDOW_OFFSET = (220, 350)
-GAME_DIMENSIONS = (720, 620)
-GAME_PADDING = (100, 100)
+GAME_OFFSET = (220, 350) # The top left corner of the Glimmer and Gloom game, in pixels down and right from the top left corner of your monitor.
+GAME_DIMENSIONS = (720, 620) # The width and height of the Glimmer and Gloom game.
+GAME_PADDING = (100, 100) # Some extra we'll capture before and after the dimensions.
 
-ROW_DIMENSIONS = (485, 36)
-ROW_MARGIN = 10
+ROW_DIMENSIONS = (485, 36) # The width and height of a row of glimmer/gloom buttons.
+ROW_MARGIN = 10 # The space between rows.
 
 TOP_INDICES = [26, 18, 11, 5, 0, 1, 2, 3, 4]
 BOTTOM_INDICES = [56, 57, 58, 59, 60, 55, 49, 42, 34]
@@ -25,10 +25,10 @@ GLIMMER_FILE_PATH = "./glimmer2.png"
 GLOOM_FILE_PATH = "./gloom.png"
 
 CAPTURE_REGION = (
-	WINDOW_OFFSET[0] - GAME_PADDING[0], 
-	WINDOW_OFFSET[1] - GAME_PADDING[0], 
-	WINDOW_OFFSET[0] + GAME_DIMENSIONS[0] + GAME_PADDING[0], 
-	WINDOW_OFFSET[1] + GAME_DIMENSIONS[1] + GAME_PADDING[1]
+	GAME_OFFSET[0] - GAME_PADDING[0], 
+	GAME_OFFSET[1] - GAME_PADDING[0], 
+	GAME_OFFSET[0] + GAME_DIMENSIONS[0] + GAME_PADDING[0], 
+	GAME_OFFSET[1] + GAME_DIMENSIONS[1] + GAME_PADDING[1]
 )
 
 def run_bot():
@@ -76,8 +76,8 @@ def click_cell(cell, clickingBottomRight=True):
 	if clickingBottomRight:
 		offset = [BOTTOM_RIGHT_OFFSET[0], BOTTOM_RIGHT_OFFSET[1]]
 
-	x = WINDOW_OFFSET[0] + cell[0] + offset[0] * IMAGE_DIMENSIONS[0]
-	y = WINDOW_OFFSET[1] + cell[1] + offset[1] * IMAGE_DIMENSIONS[1]
+	x = GAME_OFFSET[0] + cell[0] + offset[0] * CELL_DIMENSIONS[0]
+	y = GAME_OFFSET[1] + cell[1] + offset[1] * CELL_DIMENSIONS[1]
 	if BAN_EVASION_MODE:
 		x += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
 		y += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)

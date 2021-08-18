@@ -23,6 +23,7 @@ The bulk of this project was made possible by <a href="https://github.com/drov0"
 - Open the unzipped folder, click the Windows Explorer location bar, type 'cmd' and press enter
 - Type `pip install -r requirements.txt` in the resulting window and press enter
 - Arrange your Glimmer and Gloom game to the left side of your screen
+- Make sure the global variable `DEBUG_MODE` in `bot.py` is set to `True`. You can change it to False if everything is working fine; otherwise it'll give you valuable diagnostic information.
 - Type `python bot.py` in that same cmd window and press enter
 - It should work!
 - Start a new game and do it again from `python bot.py`!
@@ -30,5 +31,5 @@ The bulk of this project was made possible by <a href="https://github.com/drov0"
 # Error handling
 - Couldn't install python? Python help forums are better-equipped to assist than I.
 - Requirements installing failed? Some of the code needed to run this program may have disappeared. That's out of my control.
-- It's not solving the game right? A lot of things could cause that. My best guess is it's not reading the correct screen region. If you're doing it differently than I am (1/2 of your screen, splitscreen to the left on a 1920x1080 monitor) you may have to edit the WINDOW_OFFSET and GAME_DIMENSIONS values.
+- It fails with an array/tuple length objection? It's probably not capturing the right region. Make sure the DEBUG_MODE global variable is set to True, then run it and follow the diagnostic messages. This will save several images for you to check in your root project folder, e.g. Glimmer and Gloom/game_region.png. If you're not capturing the entire game region, you'll have to edit some of your global variables like GAME_OFFSET.
 - Still not working? Please contact me on twitter @jasper_raynolds and let me know!
