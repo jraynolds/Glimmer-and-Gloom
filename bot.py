@@ -76,13 +76,15 @@ def click_cell(cell, clickingBottomRight=True):
 	if clickingBottomRight:
 		offset = [BOTTOM_RIGHT_OFFSET[0], BOTTOM_RIGHT_OFFSET[1]]
 
-	x = GAME_OFFSET[0] + cell[0] + offset[0] * CELL_DIMENSIONS[0]
-	y = GAME_OFFSET[1] + cell[1] + offset[1] * CELL_DIMENSIONS[1]
+	x = CAPTURE_REGION[0] + cell[0] + offset[0] * CELL_DIMENSIONS[0]
+	y = CAPTURE_REGION[1] + cell[1] + offset[1] * CELL_DIMENSIONS[1]
 	if BAN_EVASION_MODE:
 		x += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
 		y += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
 
 	pyautogui.moveTo(x, y)
+	if DEBUG_MODE:
+		print("Clicking cell " + str(cell[0]) + "," + str(cell[1]) + "at " + str(x) + "px, " + str(y) + "px")
 	pyautogui.click(button="left")
 
 	pauseAmount = CLICK_DELAY
