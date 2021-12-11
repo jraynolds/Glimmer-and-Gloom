@@ -1,242 +1,261 @@
-from imagesearch import *
-from numpy import empty
+import pyautogui
+import time
+import math
+import random
 
-DEBUG_MODE = True # Set this to False once you're sure everything is working. When True, this will run a pretest to make sure everything is being detected as it should be and will print out diagnostic messages as you go.
+GLIMMER_FILE_LOC = "glimmer.png" # The local file location of the glimmer button image
+GLOOM_FILE_LOC = "gloom.png" # The local file location of the gloom button image
+PLAY_FILE_LOC = "play.png" # The local file location of the play button image
 
-CLICK_DELAY = .2 # The delay in seconds between moves we implement so we don't go too fast.
+TILE_REMOVE_LENIENCY = 5 # The maximum number of pixels different two buttons can be before they're considered duplicates and one is pruned.
+TILE_SORT_LENIENCY = 5 # The maximum number of pixels different the top left y coordinate can be for buttons before they're considered not in the same row.
 
-CELL_DIMENSIONS = (48, 31) # The width and height of our glimmer/gloom test images.
+CLICK_DELAY = .1 # How much our default delay is before the next click is made.
+GAME_DELAY = 2 # How much we wait before starting a new game.
 
-GAME_OFFSET = (220, 350) # The top left corner of the Glimmer and Gloom game, in pixels down and right from the top left corner of your monitor.
-GAME_DIMENSIONS = (720, 620) # The width and height of the Glimmer and Gloom game.
-GAME_PADDING = (100, 100) # Some extra we'll capture before and after the dimensions.
+BAN_EVASION_MODE = True # If set to True, waits a little and moves the mouse a little to evade suspicion. If set to False, we're just being efficient.
+DELAY_FUZZING = .5 # The maximum amount of time we can delay a click.
+HOVER_FUZZING = (8, 8) # The maximum (and negative minumum) we can alter the mouse click position by.
 
-ROW_DIMENSIONS = (485, 36) # The width and height of a row of glimmer/gloom buttons.
-ROW_MARGIN = 10 # The space between rows.
+MOUSE_EXIT_BOX = (10, 10) # Where we bring the mouse near to allow for an easy quit out.
 
-TOP_INDICES = [26, 18, 11, 5, 0, 1, 2, 3, 4]
-BOTTOM_INDICES = [56, 57, 58, 59, 60, 55, 49, 42, 34]
+CONFIDENCE_VALUE = .9 # The confidence value we're searching the screen with. A lower number will lead to more false positives.
 
-BAN_EVASION_MODE = False # Introduces fuzzing to avoid cheat detection.
-POINT_FUZZING_MAX = 3 # Fuzzes clicks by up to this number of pixels.
-DELAY_FUZZING_MAX = .5 # Fuzzes click delay by up to this number of seconds.
-
-GLIMMER_FILE_PATH = "./glimmer2.png"
-GLOOM_FILE_PATH = "./gloom.png"
-
-CAPTURE_REGION = (
-	GAME_OFFSET[0] - GAME_PADDING[0], 
-	GAME_OFFSET[1] - GAME_PADDING[0], 
-	GAME_OFFSET[0] + GAME_DIMENSIONS[0] + GAME_PADDING[0], 
-	GAME_OFFSET[1] + GAME_DIMENSIONS[1] + GAME_PADDING[1]
+TERMINAL_BOARD_PATTERNS = (
+	(0, 0, 0, 1, 0, 1, 0, 0, 1),
+	(0, 0, 0, 0, 1, 1, 1, 1, 0),
+	(0, 0, 1, 1, 0, 1, 0, 1, 0),
+	(1, 0, 1, 1, 0, 1, 1, 1, 1),
+	(0, 1, 0, 0, 1, 0, 0, 1, 0),
+	(1, 1, 1, 1, 0, 1, 1, 0, 1),
+	(0, 1, 0, 1, 0, 1, 1, 0, 0),
+	(0, 1, 1, 1, 1, 0, 0, 0, 0),
+	(1, 0, 0, 1, 0, 1, 0, 0, 0)
 )
 
-def run_bot():
-	glimgloms = order_gloms(gather_gloms())
+class GameBoard:
+	def __init__(self):
+		self.tiles = [
+			[None] * 5,
+			[None] * 6,
+			[None] * 7,
+			[None] * 8,
+			[None] * 9,
+			[None] * 8,
+			[None] * 7,
+			[None] * 6,
+			[None] * 5,
+		]
+		self.solving_terminal = False
+		self.isSolved = False
+		self.find_all()
 
-	while([g for g in glimgloms if g[2] == "gloom"]):
-		if DEBUG_MODE:
-			print("while started")
-		while(click_lowest(glimgloms)):
-			if DEBUG_MODE:
-				print("clicking started.")
-			glimgloms = order_gloms(gather_gloms())
+	def __str__(self):
+		string = ""
+		i = 4
+		for row in self.tiles:
+			string += " " * abs(i)
+			for col in row:
+				if col[1] == "gloom":
+					string += "o "
+				elif col[1] == "glimmer":
+					string += "i "
+				else :
+					string += "? "
+			string += "\n"
+			i-=1
+		return string
 
-		cells = solve_terminal([glimgloms.index(g) for g in glimgloms if g[2] == "gloom"])
-		for cell in cells:
-			if DEBUG_MODE:
-				print(cell)
-			click_cell(glimgloms[cell], False)
+	def find_all(self):
+		tiles = []
+		for box in pyautogui.locateAllOnScreen(
+			GLOOM_FILE_LOC, 
+			confidence=CONFIDENCE_VALUE
+		):
+			tiles.append([box, "gloom"])
+		for box in pyautogui.locateAllOnScreen(
+			GLIMMER_FILE_LOC, 
+			confidence=CONFIDENCE_VALUE
+		):
+			tiles.append([box, "glimmer"])
 
-		glimgloms = order_gloms(gather_gloms())
+		dupes = []
+		i = 0
+		while(i < len(tiles)):
+			tile = tiles[i]
+			if i < (len(tiles) - 1):
+				for j in range(len(tiles) - i - 1):
+					compare_tile = tiles[j+i+1]
+					if abs(compare_tile[0].left - tile[0].left) < TILE_REMOVE_LENIENCY:
+						if abs(compare_tile[0].top - tile[0].top) < TILE_REMOVE_LENIENCY:
+							if compare_tile not in dupes:
+								dupes.append(compare_tile)
+			i+=1
 
-def click_lowest(glimgloms):
-	if DEBUG_MODE:
-		print_board(glimgloms)
+		for dupe in dupes:
+			tiles.remove(dupe)
 
-	glom = None
-	for g in glimgloms:
-		if g[2] == "gloom":
-			if glimgloms.index(g) not in BOTTOM_INDICES:
-				if DEBUG_MODE:
-					print("We're clicking!")
-				glom = g
-				break
+		sorted_tiles = sorted(tiles, key=lambda tile: tile[0].top)
 
-	if glom:
-		click_cell(glom)
-		return True
-	else:
-		return False
+		rows = [[] for _ in range(9)]
+		for row in rows:
+			for tile in sorted_tiles:
+				if abs(tile[0].top - sorted_tiles[0][0].top) < TILE_SORT_LENIENCY:
+					row.append(tile)
+			for tile in row:
+				sorted_tiles.remove(tile)
 
-def click_cell(cell, clickingBottomRight=True):
-	BOTTOM_RIGHT_OFFSET = [1, 2]
-	DEFAULT_OFFSET = [.5, .5]
-	offset = [DEFAULT_OFFSET[0], DEFAULT_OFFSET[1]]
-	if clickingBottomRight:
-		offset = [BOTTOM_RIGHT_OFFSET[0], BOTTOM_RIGHT_OFFSET[1]]
+		sorted_rows = sorted(rows, key=lambda row: row[0][0].top)
 
-	x = CAPTURE_REGION[0] + cell[0] + offset[0] * CELL_DIMENSIONS[0]
-	y = CAPTURE_REGION[1] + cell[1] + offset[1] * CELL_DIMENSIONS[1]
-	if BAN_EVASION_MODE:
-		x += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
-		y += random.randint(-POINT_FUZZING_MAX, POINT_FUZZING_MAX)
+		for i in range(len(sorted_rows)):
+			sorted_rows[i] = sorted(sorted_rows[i], key=lambda tile: tile[0].left)
 
-	pyautogui.moveTo(x, y)
-	if DEBUG_MODE:
-		print("Clicking cell " + str(cell[0]) + "," + str(cell[1]) + "at " + str(x) + "px, " + str(y) + "px")
-	pyautogui.click(button="left")
+		for row in range(len(sorted_rows)):
+			for col in range(len(sorted_rows[row])):
+				self.tiles[row][col] = sorted_rows[row][col]
 
-	pauseAmount = CLICK_DELAY
-	if BAN_EVASION_MODE:
-		pauseAmount += random.uniform(0, DELAY_FUZZING_MAX)
+	def find_next_tile(self):
+		for y in range(len(self.tiles)):
+			for x in range(len(self.tiles[y])):
+				if self.tiles[y][x][1] == "gloom":
+					neighbors = self.get_neighboring_tiles(self.tiles[y][x])
+					if neighbors[5]:
+						return neighbors[5]
+		if self.solving_terminal == False:
+			print("Time to start solving this terminal!")
+			self.solving_terminal = True
+			self.solve_terminal()
+			return self.find_next_tile()
+		else :
+			print("Done!")
+			self.isSolved = True
 
-	pyautogui.PAUSE = pauseAmount
-	pyautogui.moveTo(30, 30)
+	def get_neighboring_tiles(self, tile):
+		indices = self.get_tile_indices(tile)
+		neighbors = []
+		top_half_directions = ((-1, -1), (0, -1), (-1, 0), (1, 0), (0, 1), (1, 1))
+		middle_directions = ((-1, -1), (0, -1), (-1, 0), (1, 0), (-1, 1), (0, 1))
+		bottom_half_directions = ((0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1))
+		if indices[1] < 4:
+			directions = top_half_directions
+		elif indices[1] == 4:
+			directions = middle_directions
+		elif indices[1] > 4:
+			directions = bottom_half_directions
+		for direction in directions:
+			neighbor_indices = (indices[0] + direction[0], indices[1] + direction[1])
+			if neighbor_indices[1] in range(0, len(self.tiles)):
+				if neighbor_indices[0] in range(0, len(self.tiles[neighbor_indices[1]])):
+					neighbors.append(
+						self.tiles[neighbor_indices[1]][neighbor_indices[0]]
+					)
+				else :
+					neighbors.append(None)
+			else :
+				neighbors.append(None)
+		return neighbors
 
+	def solve_terminal(self):
+		terminal_row = (
+			1 if self.tiles[8][0][1] == "gloom" else 0,
+			1 if self.tiles[8][1][1] == "gloom" else 0,
+			1 if self.tiles[8][2][1] == "gloom" else 0,
+			1 if self.tiles[8][3][1] == "gloom" else 0,
+			1 if self.tiles[8][4][1] == "gloom" else 0,
+			1 if self.tiles[7][5][1] == "gloom" else 0,
+			1 if self.tiles[6][6][1] == "gloom" else 0,
+			1 if self.tiles[5][7][1] == "gloom" else 0,
+			1 if self.tiles[4][8][1] == "gloom" else 0,
+		)
 
-def solve_terminal(gloom_indices):
-	patterns = []
-	patterns.append((0, 0, 0, 1, 0, 1, 0, 0, 1))
-	patterns.append((0, 0, 0, 0, 1, 1, 1, 1, 0))
-	patterns.append((0, 0, 1, 1, 0, 1, 0, 1, 0))
-	patterns.append((1, 0, 1, 1, 0, 1, 1, 1, 1))
-	patterns.append((0, 1, 0, 0, 1, 0, 0, 1, 0))
-	patterns.append((1, 1, 1, 1, 0, 1, 1, 0, 1))
-	patterns.append((0, 1, 0, 1, 0, 1, 1, 0, 0))
-	patterns.append((0, 1, 1, 1, 1, 0, 0, 0, 0))
-	patterns.append((1, 0, 0, 1, 0, 1, 0, 0, 0))
-	if DEBUG_MODE:
-		for row in patterns:
-			print(row)
-		print("")
+		testing_rows = [[0 for _ in range(9)] for x in range(9)]
 
-	glooms = []
-	for col in range(9):
-		if BOTTOM_INDICES[col] in gloom_indices:
-			glooms.append(1)
-		else:
-			glooms.append(0)
-	if DEBUG_MODE:
-		print(glooms)
-		print("")
+		for y in range(len(testing_rows)):
+			row = testing_rows[y]
+			compare = terminal_row[y]
+			if compare == 1:
+				for x in range(len(row)):
+					testing_rows[y][x] = TERMINAL_BOARD_PATTERNS[y][x]
 
-	checking = []
-	for row in range(9):
-		check_row = []
-		for col in range(9):
-			if BOTTOM_INDICES[row] in gloom_indices:
-				check_row.append(patterns[row][col])
-			else:
-				check_row.append(0)
-		checking.append(check_row)
-	if DEBUG_MODE:
-		for row in checking:
-			print(row)
-		print("")
+		solution_row = [0 for _ in range(9)]
+		for x in range(len(solution_row)):
+			one_sum = 0
+			for row in testing_rows:
+				one_sum += row[x]
+			if one_sum % 2 != 0:
+				solution_row[x] = 1
 
-	result = []
-	for col in range(9):
-		sum = 0
-		for row in checking:
-			sum += row[col]
-		result.append(sum%2)
-	if DEBUG_MODE:
-		print(result)
-		print("")
+		beginning_row = (
+			self.tiles[4][0],
+			self.tiles[3][0],
+			self.tiles[2][0],
+			self.tiles[1][0],
+			self.tiles[0][0],
+			self.tiles[0][1],
+			self.tiles[0][2],
+			self.tiles[0][3],
+			self.tiles[0][4]
+		)
 
-	cells = []
-	for r in range(len(result)):
-		if result[r] == 1:
-			cells.append(TOP_INDICES[r])
-	if DEBUG_MODE:
-		print(cells)
-		print("")
+		tile_clicks = []
+		for x in range(len(solution_row)):
+			if solution_row[x] == 1:
+				tile_clicks.append(beginning_row[x])
 
-	return cells
+		for tile in tile_clicks:
+			self.click_tile(tile)
 
-def get_nw(pts):
-	nw = pts[0]
-	for pt in pts:
-		if pt[1] < nw[1]:
-			nw = pt
-		elif pt[1] == nw[1] and pt[0] < nw[0]:
-			nw = pt
-	return nw
+	def get_tile_indices(self, tile):
+		for y in range(len(self.tiles)):
+			for x in range(len(self.tiles[y])):
+				if self.tiles[y][x] == tile:
+					return (x, y)
+		return None
 
-def gather_gloms():
-	glimgloms = []
-	glimmers = imagesearch_array(GLIMMER_FILE_PATH, CAPTURE_REGION)
-	glooms = imagesearch_array(GLOOM_FILE_PATH, CAPTURE_REGION)
+	def click_tile(self, tile):
+		delay = CLICK_DELAY
+		if BAN_EVASION_MODE:
+			delay += random.uniform(0, DELAY_FUZZING)
+		time.sleep(delay)
+		center = pyautogui.center(tile[0])
+		if BAN_EVASION_MODE:
+			center = (
+				center[0] + random.randint(-HOVER_FUZZING[0], HOVER_FUZZING[0]), 
+				center[1] + random.randint(-HOVER_FUZZING[1], HOVER_FUZZING[1])
+			)
+		pyautogui.click(center[0], center[1])
+		neighbors = self.get_neighboring_tiles(tile)
+		neighbors.append(tile)
+		for neighbor in neighbors:
+			if neighbor == None:
+				continue
+			elif neighbor[1] == "gloom":
+				neighbor[1] = "glimmer"
+			elif neighbor[1] == "glimmer":
+				neighbor[1] = "gloom"
+		pyautogui.moveTo(MOUSE_EXIT_BOX[0] + 10, MOUSE_EXIT_BOX[1] + 10)
 
-	for g in glimmers:
-		glimgloms.append((g[0], g[1], "glimmer"))
-	for g in glooms:
-		glimgloms.append((g[0], g[1], "gloom"))
-	if len(glimgloms) == 0:
-		print("We didn't manage to find any glimmer or gloom squares. Is the game begun and visible on your screen?")
-		print("Have you arranged the Flight Rising window and the search window area appropriately?")
-	return glimgloms
+def run():
+	while(True):
+		time.sleep(GAME_DELAY)
+		solve_board()
+		time.sleep(GAME_DELAY)
+		pyautogui.click(
+			pyautogui.center(
+				pyautogui.locateOnScreen(
+					PLAY_FILE_LOC, 
+					confidence=CONFIDENCE_VALUE
+				)
+			)
+		)
 
-def order_gloms(gloms):
-	gloms.sort(key=lambda ord_glom: ord_glom[1])
+def solve_board():
+	gameBoard = GameBoard()
+	print(gameBoard)
+	while(not gameBoard.isSolved):
+		next_tile = gameBoard.find_next_tile()
+		if next_tile is not None:
+			gameBoard.click_tile(next_tile)
+	return
 
-	ordered_gloms = []
-	row_gloms = []
-	for i in range(9):
-		glom = gloms[0]
-		row_gloms = [g for g in gloms if abs(g[1] - glom[1]) < 5]
-		new_gloms = []
-		for r in row_gloms:
-			if (r[0], glom[1], r[2]) not in new_gloms:
-				new_gloms.append((r[0], glom[1], r[2]))
-		gloms = [g for g in gloms if g not in row_gloms]
-		new_gloms.sort(key=lambda ord_glom: ord_glom[0])
-		ordered_gloms.extend(new_gloms)
-
-	return ordered_gloms
-
-def print_board(glimgloms):
-	spacer = "      "
-
-	board = []
-	board.append([spacer, spacer, 0, 0, 0, 0, 0, spacer, spacer])
-	board.append([spacer, 0, 0, 0, 0, 0, 0, spacer, spacer])
-	board.append([spacer, 0, 0, 0, 0, 0, 0, 0, spacer])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0, spacer])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0, spacer])
-	board.append([spacer, 0, 0, 0, 0, 0, 0, 0, spacer])
-	board.append([spacer, 0, 0, 0, 0, 0, 0, spacer, spacer])
-	board.append([spacer, spacer, 0, 0, 0, 0, 0, spacer, spacer])
-
-	if DEBUG_MODE:
-		print("Length is " + str(len(glimgloms)))
-		print(glimgloms)
-
-def run_pretest():
-	print("We're running a setup diagnostic.")
-	im = region_grabber(region=CAPTURE_REGION)
-	file_path = "game_region.png"
-	print("We're saving a file to " + file_path + " showing our search region.")
-	print("If the image you find at that location isn't representative of the entire game board, you need to change the global variables defining it.")
-	im.save(file_path) # Saves a screenshot of the region we're looking in
-	num_glimmers = imagesearch_count(
-		GLIMMER_FILE_PATH, 
-		CAPTURE_REGION, 
-		save_output=" found", 
-		debug=True
-	)
-	num_glooms = imagesearch_count(
-		GLOOM_FILE_PATH, 
-		CAPTURE_REGION, 
-		save_output=" found", 
-		debug=True
-	)
-	print("In total we found " + str(num_glimmers) + " glimmers and " + str(num_glooms) + " glooms.")
-
-if DEBUG_MODE:
-	run_pretest()
-	run_bot()
-else :
-	run_bot()
+run()
