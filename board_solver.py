@@ -225,7 +225,7 @@ class GameBoard:
 				center[1] + random.randint(-HOVER_FUZZING[1], HOVER_FUZZING[1])
 			)
 		print(center)
-		pyautogui.click(center.x, center.y)
+		pyautogui.click(center[0], center[1])
 		neighbors = self.get_neighboring_tiles(tile)
 		neighbors.append(tile)
 		for neighbor in neighbors:
