@@ -11,7 +11,7 @@ TILE_SORT_LENIENCY = 5 # The maximum number of pixels different the top left y c
 
 CLICK_DELAY = .1 # How much our default delay is before the next click is made.
 
-BAN_EVASION_MODE = True # If set to True, waits a little and moves the mouse a little to evade suspicion. If set to False, we're just being efficient.
+BAN_EVASION_MODE = False # If set to True, waits a little and moves the mouse a little to evade suspicion. If set to False, we're just being efficient.
 DELAY_FUZZING = .5 # The maximum amount of time we can delay a click.
 HOVER_FUZZING = (8, 8) # The maximum (and negative minumum) we can alter the mouse click position by.
 
@@ -116,6 +116,7 @@ class GameBoard:
 		for y in range(len(self.tiles)):
 			for x in range(len(self.tiles[y])):
 				if self.tiles[y][x][1] == "gloom":
+					print(self.tiles[y][x])
 					neighbors = self.get_neighboring_tiles(self.tiles[y][x])
 					if neighbors[5]:
 						return neighbors[5]
@@ -211,6 +212,8 @@ class GameBoard:
 		return None
 
 	def click_tile(self, tile):
+		print("Clicking tile:")
+		print(tile)
 		delay = CLICK_DELAY
 		if BAN_EVASION_MODE:
 			delay += random.uniform(0, DELAY_FUZZING)
@@ -221,7 +224,8 @@ class GameBoard:
 				center[0] + random.randint(-HOVER_FUZZING[0], HOVER_FUZZING[0]), 
 				center[1] + random.randint(-HOVER_FUZZING[1], HOVER_FUZZING[1])
 			)
-		pyautogui.click(center[0], center[1])
+		print(center)
+		pyautogui.click(center.x, center.y)
 		neighbors = self.get_neighboring_tiles(tile)
 		neighbors.append(tile)
 		for neighbor in neighbors:
@@ -231,15 +235,18 @@ class GameBoard:
 				neighbor[1] = "glimmer"
 			elif neighbor[1] == "glimmer":
 				neighbor[1] = "gloom"
-		pyautogui.moveTo(MOUSE_EXIT_BOX[0] + 10, MOUSE_EXIT_BOX[1] + 10)
+		# pyautogui.moveTo(MOUSE_EXIT_BOX[0] + 10, MOUSE_EXIT_BOX[1] + 10)
+		print(self)
 
 def solve_board():
 	gameBoard = GameBoard()
 	print(gameBoard)
 	while(not gameBoard.isSolved):
 		next_tile = gameBoard.find_next_tile()
+		print(next_tile)
 		if next_tile is not None:
 			gameBoard.click_tile(next_tile)
 	return
 
-solve_board()
+if __name__ == "__main__":
+	solve_board()
