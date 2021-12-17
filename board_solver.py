@@ -11,7 +11,7 @@ TILE_SORT_LENIENCY = 5 # The maximum number of pixels different the top left y c
 
 CLICK_DELAY = .1 # How much our default delay is before the next click is made.
 
-BAN_EVASION_MODE = False # If set to True, waits a little and moves the mouse a little to evade suspicion. If set to False, we're just being efficient.
+BAN_EVASION_MODE = True # If set to True, waits a little and moves the mouse a little to evade suspicion. If set to False, we're just being efficient.
 DELAY_FUZZING = .5 # The maximum amount of time we can delay a click.
 HOVER_FUZZING = (8, 8) # The maximum (and negative minumum) we can alter the mouse click position by.
 
