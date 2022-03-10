@@ -29,4 +29,4 @@ If at any time the program has to be stopped, move your cursor to the top left c
 - Requirements installing failed? Some of the code needed to run this program may have disappeared. That's out of my control.
 - Keeps clicking the wrong thing? Make sure the command line is on the same screen.
 - Fails with a "list index out of range" issue? Make sure the Very Hard game mode is visible on screen. Try with other web browsers too. If that fails, replace the image files with screenshot snips you've taken on your own computer.
-- Not an above issue? Please contact me on twitter @jasper_raynolds and let me know!
+- Not an above issue? Please open an Issue on this github project (or reply to one that matches your issue) and let me know!
