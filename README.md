@@ -1,6 +1,11 @@
 # Glimmer-and-Gloom
 A python automated bot to play Flight Rising's Glimmer and Gloom minigame on the Very Hard difficulty.
 
+# THIS REPOSITORY IS NO LONGER MAINTAINED.
+Instead, I recommend using the excellent fork by HjOtal-1 you can find here:
+https://github.com/HjOtal-1/Glimmer-and-Gloom
+
+# OUTDATED INSTRUCTIONS
 Run bot.py when the game has begun, as in the screenshot:
 <img src="https://i.imgur.com/4VFS5As.jpg">
 
